@@ -15,16 +15,27 @@ func TestCache(t *testing.T) {
 	t1 := Cache("t1")
 	t1.Add("k1", "v1", 0)
 	t1.Add("k2", "v2", 0)
-	t1.Add("k3", "v3", 10)
-	fmt.Println(t1.Get("k2"))
-	fmt.Println(t1.Get("k3"))
-	fmt.Println(t1.Get("k4"))
+	t1.Add("k3", "v3", 5)
+	k1, _ := t1.Get("k1")
+	k2, _ := t1.Get("k2")
+	k3, _ := t1.Get("k3")
 
-	fmt.Println(t1.items)
+	fmt.Println(k1.Data())
+	fmt.Println(k2.Data())
+	fmt.Println(k3.Data())
 
-	time.Sleep(15 * time.Second)
-	fmt.Println(t1.Get("k3"))
+	// Delete()
+	t1.Delete("k1")
 
+	time.Sleep(6 * time.Second)
+	k1, _ = t1.Get("k1")
+	k3, _ = t1.Get("k3")
+
+	fmt.Println(k1)
+	fmt.Println(k3)
+
+	// Exist()
+	fmt.Println(t1.Exist("k1"))
 }
 
 func TestExpireKeys(t *testing.T) {
@@ -49,8 +60,33 @@ func TestExpireKeys(t *testing.T) {
 func TestAccessCount(t *testing.T) {
 	t1 := Cache("access_t1")
 	t1.Add("k1", "v1", 0)
-	fmt.Println(t1.GetAccessCount("k1"))
-	t1.Get("k1")
-	t1.Get("k1")
-	fmt.Println(t1.GetAccessCount("k1"))
+	k1, ok := t1.Get("k1")
+	if ok {
+		fmt.Println(k1.AccessCount())
+	}
+
+}
+
+func TestTableCount(t *testing.T) {
+	t1 := Cache("count_t1")
+	count := 100
+	for i := 0; i < count; i++ {
+		key := k + strconv.Itoa(i)
+		t1.Add(key, i, int64(i))
+	}
+	fmt.Println(t1.Count())
+}
+
+func TestTableFlush(t *testing.T) {
+	t1 := Cache("flush_t1")
+	count := 10000
+	for i := 0; i < count; i++ {
+		key := k + strconv.Itoa(i)
+		t1.Add(key, i, int64(i))
+	}
+	fmt.Println(t1.Count())
+	// Flush()
+	t1.Flush()
+	fmt.Println(t1.Count())
+
 }

@@ -19,11 +19,12 @@ type CacheTable struct {
 }
 
 type delItem struct {
-	keys []interface{} // 存放某个时间段需要删除的key
+	keys []interface{}
 	t    int64
 }
 
-// 缓存过期回收（协程开启）
+// cache expire callback
+// when create a new table, fun() was started
 func (c *CacheTable) run(now int64) {
 	t := time.NewTicker(time.Second * 1) // 获取定时器，每一秒定时器都会往管道里写数据
 	defer t.Stop()
@@ -79,7 +80,7 @@ func (c *CacheTable) Add(key interface{}, data interface{}, expire int64) {
 }
 
 // Get get cache data from in the table
-func (c *CacheTable) Get(key interface{}) (interface{}, bool) {
+func (c *CacheTable) Get(key interface{}) (*CacheItem, bool) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -94,7 +95,7 @@ func (c *CacheTable) Get(key interface{}) (interface{}, bool) {
 	}
 
 	value.accountCount += 1
-	return value.data, false
+	return value, true
 
 }
 
@@ -131,20 +132,36 @@ func (c *CacheTable) multiDelete(keys []interface{}, now int64) {
 	defer c.Unlock()
 
 	for _, key := range keys {
-		// 删除key
+		// delete key
 		delete(c.items, key)
 
-		// 删除保存过期时间key
+		// delete the current expire time
 		delete(c.expireMap, now)
 	}
 
 }
 
-// GetAccessCount get access-count in the cache in the table
-func (c *CacheTable) GetAccessCount(key interface{}) int64 {
-	value, found := c.items[key]
-	if !found { // if key not exist，return 0
-		return 0
-	}
-	return value.accountCount
+// Exist return true, If a key exist in the table
+func (c *CacheTable) Exist(key interface{}) bool {
+	c.Lock()
+	defer c.Unlock()
+	_, found := c.items[key]
+	return found
+}
+
+// Count count all keys number in the table
+func (c *CacheTable) Count() (count int) {
+	c.Lock()
+	count = len(c.items)
+	defer c.Unlock()
+	return
+}
+
+// Flush clear all items and expireMap in the table
+func (c *CacheTable) Flush() {
+	c.Lock()
+	defer c.Unlock()
+
+	c.items = make(map[interface{}]*CacheItem)
+	c.expireMap = make(map[int64][]interface{})
 }

@@ -6,8 +6,8 @@ import (
 )
 
 type CacheItem struct {
-	data       interface{}
-	expireTime int64 // 0：no-expire
+	data         interface{}
+	expireTime   int64 // 0：no-expire
 	accountCount int64 // every time cache was  accessed to add 1
 
 	accessTime int64
@@ -23,4 +23,14 @@ func newCacheItem(data interface{}, expireTime int64) *CacheItem {
 		createTime: nowTime,
 		accessTime: nowTime,
 	}
+}
+
+func (c *CacheItem) Data() interface{} {
+	return c.data
+}
+
+func (c *CacheItem) AccessCount() int64 {
+	c.Lock()
+	defer c.Unlock()
+	return c.accountCount
 }
